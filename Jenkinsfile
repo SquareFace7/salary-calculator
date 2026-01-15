@@ -12,15 +12,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // ג'נקינס מושך את הקוד אוטומטית, אבל זה שלב פורמלי
                 checkout scm
             }
         }
 
         stage('Run Script') {
             steps {
-                // הרצת הסקריפט עם הפרמטרים שהוזנו
-                // שים לב: אנחנו מעבירים את המשתנים שהוגדרו למעלה
+                // הרצת הסקריפט
                 sh "python3 salary_calc.py \"${params.EMPLOYEE_NAME}\" ${params.HOURLY_RATE} ${params.HOURS_WORKED} ${params.IS_HOLIDAY} \"${params.DATE}\""
             }
         }
@@ -28,15 +26,14 @@ pipeline {
 
     post {
         always {
-            // שמירת הדוח גם אם יש שגיאה
             publishHTML(target: [
                 allowMissing: false,
                 alwaysLinkToLastBuild: true,
                 keepAll: true,
                 reportDir: '.',
-                reportFiles: 'salary_report.html', // וודא שזה השם שהפייתון שלך מייצר!
+                reportFiles: 'salary_slip.html', // תיקנתי את השם כאן!
                 reportName: 'Salary Report',
-                reportTitles: 'Salary Report'
+                reportTitles: 'Salary Slip'
             ])
         }
     }
