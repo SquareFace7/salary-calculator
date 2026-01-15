@@ -1,44 +1,26 @@
 pipeline {
-    agent any 
-    
+    agent any
+
     parameters {
-        // בחירת הסוכן עליו ירוץ הג'וב (דרישה 4.2 במטלה)
-        choice(name: 'TargetNode', choices: ['built-in', 'agent1'], description: 'Select the node to run the script on')
-        
-        // פרמטרים לסקריפט השכר
-        string(name: 'EMPLOYEE_NAME', defaultValue: 'Israel Israeli', description: 'Enter Employee Name')
-        string(name: 'HOURLY_RATE', defaultValue: '50', description: 'Enter Hourly Rate')
-        string(name: 'HOURS_WORKED', defaultValue: '160', description: 'Enter Total Hours')
-        booleanParam(name: 'IS_HOLIDAY', defaultValue: false, description: 'Did the employee work on a holiday?')
-        string(name: 'DATE', defaultValue: '2023-10-01', description: 'Enter Date (YYYY-MM-DD)')
+        string(name: 'EMPLOYEE_NAME', defaultValue: 'Eliad', description: 'Name of the employee')
+        string(name: 'HOURLY_RATE', defaultValue: '50', description: 'Hourly rate')
+        string(name: 'HOURS_WORKED', defaultValue: '10', description: 'Hours worked')
+        booleanParam(name: 'IS_HOLIDAY', defaultValue: false, description: 'Is it a holiday?')
+        string(name: 'DATE', defaultValue: '01/01/2026', description: 'Date of calculation')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // שלב 1: הורדת הקוד מגיטהאב
+                // ג'נקינס מושך את הקוד אוטומטית, אבל זה שלב פורמלי
                 checkout scm
-                echo 'Code checked out successfully.'
-            }
-        }
-        
-        stage('Validate Parameters') {
-            steps {
-                script {
-                    // שלב 2: בדיקה פשוטה שהערכים לא ריקים (לוגיקה נוספת יש בסקריפט פייתון)
-                    if (params.EMPLOYEE_NAME == '') {
-                        error "Employee Name cannot be empty!"
-                    }
-                    echo "Validating inputs for user: ${params.EMPLOYEE_NAME}"
-                }
             }
         }
 
         stage('Run Script') {
-            agent { label "${params.TargetNode}" } // הרצה על הסוכן שנבחר
             steps {
-                // שלב 3: הרצת הסקריפט (שים לב: אם אתה בווינדוס שנה את sh ל-bat)
-                echo 'Running salary calculation script...'
+                // הרצת הסקריפט עם הפרמטרים שהוזנו
+                // שים לב: אנחנו מעבירים את המשתנים שהוגדרו למעלה
                 sh "python3 salary_calc.py \"${params.EMPLOYEE_NAME}\" ${params.HOURLY_RATE} ${params.HOURS_WORKED} ${params.IS_HOLIDAY} \"${params.DATE}\""
             }
         }
@@ -46,14 +28,16 @@ pipeline {
 
     post {
         always {
-            // שלב 4: שמירת הדוח והלוגים כדי שיופיעו בג'נקינס
-            archiveArtifacts artifacts: '*.html, *.log', allowEmptyArchive: true
-        }
-        success {
-            echo 'Pipeline finished successfully! HTML report generated.'
-        }
-        failure {
-            echo 'Pipeline failed. Please check the logs.'
+            // שמירת הדוח גם אם יש שגיאה
+            publishHTML(target: [
+                allowMissing: false,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: '.',
+                reportFiles: 'salary_report.html', // וודא שזה השם שהפייתון שלך מייצר!
+                reportName: 'Salary Report',
+                reportTitles: 'Salary Report'
+            ])
         }
     }
 }
